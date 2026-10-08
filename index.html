@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UPS 1 — Online UPS Backup Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F9FB;
+    --surface:#FFFFFF;
+    --border:#E2E8F0;
+    --navy:#0B1F3A;
+    --navy-2:#132B52;
+    --blue:#2563EB;
+    --blue-dark:#1D4ED8;
+    --blue-tint:#EFF4FF;
+    --muted:#5B6B82;
+    --green:#0F8F5F;
+    --green-tint:#EAFBF3;
+    --green-border:#BFE9D6;
+    --amber:#B45309;
+    --amber-tint:#FEF6E7;
+    --amber-border:#F3DFB2;
+    --red:#DC2626;
+    --red-tint:#FDECEC;
+    --radius:14px;
+    --shadow: 0 1px 2px rgba(15,31,58,0.04), 0 8px 24px rgba(15,31,58,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    font-family:'IBM Plex Sans',sans-serif;
+    color:var(--navy);
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:980px;margin:0 auto;padding:0 16px 56px;}
+
+  /* banner header */
+  .banner{
+    background:linear-gradient(135deg,var(--navy) 0%, var(--navy-2) 55%, #1B3F73 100%);
+    color:#fff;
+    text-align:center;
+    padding:34px 20px 30px;
+    border-radius:0 0 16px 16px;
+    margin-bottom:26px;
+  }
+  .banner h1{font-size:30px;font-weight:700;margin:0 0 10px;letter-spacing:0.01em;}
+  .banner .rule-line{
+    display:flex;align-items:center;justify-content:center;gap:16px;
+    margin-bottom:10px;
+  }
+  .banner .rule-line .line{height:1px;width:64px;background:rgba(255,255,255,0.35);}
+  .banner .rule-line span.txt{
+    font-size:14px;font-weight:600;letter-spacing:0.06em;
+    text-transform:uppercase;color:#DCE6FB;
+  }
+  .banner .helper{font-size:13.5px;color:#B9C8E8;margin:0;}
+
+  /* input cards */
+  .inputs-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:20px;
+  }
+  @media (max-width:860px){ .inputs-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:520px){ .inputs-grid{grid-template-columns:1fr;} }
+
+  .field{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    box-shadow:var(--shadow);
+  }
+  .field-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .icon-badge{
+    width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    flex:none;color:#fff;
+  }
+  .icon-badge svg{width:17px;height:17px;}
+  .icon-kva{background:var(--blue);}
+  .icon-dcbus{background:#159A6E;}
+  .icon-eff{background:#7C4DDB;}
+  .icon-pf{background:#D97706;}
+
+  .field label{font-size:14px;font-weight:600;color:var(--navy);}
+
+  .field .input-row{
+    display:flex;
+    align-items:center;
+    border:1.5px solid var(--border);
+    border-radius:9px;
+    overflow:hidden;
+    transition:border-color .15s ease, box-shadow .15s ease;
+    margin-bottom:8px;
+  }
+  .field .input-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-tint);}
+  .field.has-error .input-row{border-color:var(--red);}
+  .field.has-error .input-row:focus-within{box-shadow:0 0 0 3px var(--red-tint);}
+  .field input{
+    flex:1;border:none;outline:none;padding:10px 10px;
+    font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;
+    color:var(--navy);width:100%;min-width:0;background:transparent;
+  }
+  .field .unit-inline{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);
+    padding:0 10px;border-left:1px solid var(--border);white-space:nowrap;
+  }
+  .field .help{font-size:11.5px;color:var(--muted);margin:0;}
+  .field .error-msg{font-size:11.5px;color:var(--red);margin:0;display:none;}
+  .field.has-error .error-msg{display:block;}
+  .field.has-error .help{display:none;}
+
+  /* actions */
+  .actions{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:6px;}
+  .btn{
+    font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;
+    padding:10px 18px;border-radius:8px;cursor:pointer;border:1.5px solid transparent;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:background .15s ease, border-color .15s ease, transform .05s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-ghost{background:var(--surface);border-color:var(--border);color:var(--navy);}
+  .btn-ghost:hover{border-color:var(--blue);color:var(--blue);}
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-primary:hover{background:var(--blue-dark);}
+  .btn-whatsapp{background:#25D366;color:#fff;}
+  .btn-whatsapp:hover{background:#1EBA5A;}
+  .btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+  .btn svg{width:14px;height:14px;}
+
+  /* status + results */
+  .status-banner{
+    display:none;
+    align-items:center;gap:10px;
+    background:var(--green-tint);border:1px solid var(--green-border);
+    color:var(--green);font-weight:600;font-size:13.5px;
+    border-radius:10px;padding:12px 16px;margin:22px 0 16px;
+  }
+  .status-banner .tick{
+    width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:13px;flex:none;
+  }
+
+  .results{display:none;}
+  .results.visible{display:block;}
+
+  .results-cols{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:760px){ .results-cols{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px;
+  }
+  .card h3{font-size:15px;margin:0 0 16px;color:var(--navy);font-weight:700;}
+
+  .metric-row{display:flex;justify-content:space-between;align-items:flex-start;padding:13px 0;border-top:1px solid var(--border);gap:12px;}
+  .metric-row:first-of-type{border-top:none;padding-top:0;}
+  .metric-label{font-size:13.5px;color:var(--navy);font-weight:600;}
+  .metric-hint{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .metric-value{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--navy);white-space:nowrap;}
+
+  .rec-card{background:var(--blue-tint);border-color:#D6E4FF;}
+  .rec-top{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .rec-top .thumb{
+    width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .rec-top .thumb svg{width:13px;height:13px;}
+  .rec-top h3{margin:0;font-size:14px;color:var(--blue-dark);}
+  .rec-size{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;color:var(--navy);margin:2px 0 8px;}
+  .rec-blurb{font-size:13px;color:var(--muted);margin:0 0 14px;line-height:1.5;}
+  .rec-list{list-style:none;margin:0 0 14px;padding:0;}
+  .rec-list li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--navy);padding:6px 0;}
+  .rec-list li .tick{
+    flex:none;width:18px;height:18px;border-radius:50%;background:var(--green-tint);
+    color:var(--green);font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+
+  .warn-banner{
+    display:flex;gap:10px;align-items:flex-start;
+    background:var(--amber-tint);border:1px solid var(--amber-border);color:var(--amber);
+    border-radius:10px;padding:12px 16px;font-size:12.5px;line-height:1.5;margin-bottom:16px;
+  }
+  .warn-banner svg{width:16px;height:16px;flex:none;margin-top:1px;}
+
+  /* battery backup table */
+  .card.backup{margin-bottom:16px;}
+  .backup-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;}
+  .oload-chip{
+    background:var(--bg);border:1px solid var(--border);border-radius:999px;
+    padding:6px 14px;font-size:12.5px;color:var(--navy);
+  }
+  .oload-chip span{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--blue-dark);}
+
+  table.backup-table{width:100%;border-collapse:collapse;}
+  table.backup-table th{
+    text-align:left;font-size:11.5px;color:var(--muted);font-weight:600;
+    padding:8px 10px;border-bottom:1.5px solid var(--border);
+  }
+  table.backup-table td{padding:10px 10px;font-size:13.5px;border-bottom:1px solid var(--border);color:var(--navy);}
+  table.backup-table td.mono, table.backup-table th.mono{font-family:'IBM Plex Mono',monospace;}
+  table.backup-table tr:last-child td{border-bottom:none;}
+  .ah-value{color:var(--green);font-weight:600;}
+
+  @media (max-width:520px){
+    table.backup-table th:nth-child(2), table.backup-table td:nth-child(2){display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="banner">
+    <h1>UPS 1</h1>
+    <div class="rule-line"><span class="line"></span><span class="txt">On line UPS backup formula</span><span class="line"></span></div>
+    <p class="helper">Enter KVA and DC BUS figures</p>
+  </div>
+
+  <div class="inputs-grid">
+    <div class="field" id="field-kva">
+      <div class="field-top">
+        <div class="icon-badge icon-kva"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></div>
+        <label for="in-kva">KVA</label>
+      </div>
+      <div class="input-row">
+        <input id="in-kva" type="number" step="any" inputmode="decimal" placeholder="e.g. 200" aria-describedby="help-kva">
+        <span class="unit-inline">kVA</span>
+      </div>
+      <p class="help" id="help-kva">UPS rated capacity</p>
+      <p class="error-msg" role="alert">Enter a KVA value greater than 0</p>
+    </div>
+
+    <div class="field" id="field-dcbus">
+      <div class="field-top">
+        <div class="icon-badge icon-dcbus"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="16" height="11" rx="2" stroke="currentColor" stroke-width="2"/><rect x="20" y="10" width="2" height="5" fill="currentColor"/><path d="M7 12h2M12 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <label for="in-dcbus">DC BUS</label>
+      </div>
+      <div class="input-row">
+        <input id="in-dcbus" type="number" step="any" inputmode="decimal" placeholder="e.g. 409" aria-describedby="help-dcbus">
+        <span class="unit-inline">V</span>
+      </div>
+      <p class="help" id="help-dcbus">Battery bus voltage</p>
+      <p class="error-msg" role="alert">Enter a DC BUS value greater than 0</p>
+    </div>
+
+    <div class="field" id="field-eff">
+      <div class="field-top">
+        <div class="icon-badge icon-eff"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2 7 4-14 2 7h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <label for="in-eff">Inv. Efficiency</label>
+      </div>
+      <div class="input-row">
+        <input id="in-eff" type="number" step="any" inputmode="decimal" placeholder="e.g. 0.9" aria-describedby="help-eff">
+        <span class="unit-inline">ratio</span>
+      </div>
+      <p class="help" id="help-eff">Inverter efficiency factor</p>
+      <p class="error-msg" role="alert">Enter an efficiency value greater than 0</p>
+    </div>
+
+    <div class="field" id="field-pf">
+      <div class="field-top">
+        <div class="icon-badge icon-pf"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        <label for="in-pf">Power factor</label>
+      </div>
+      <div class="input-row">
+        <input id="in-pf" type="number" step="any" inputmode="decimal" placeholder="e.g. 0.8" aria-describedby="help-pf">
+        <span class="unit-inline">ratio</span>
+      </div>
+      <p class="help" id="help-pf">Load power factor</p>
+      <p class="error-msg" role="alert">Enter a power factor value greater than 0</p>
+    </div>
+  </div>
+
+  <div class="status-banner" id="statusBanner">
+    <span class="tick">✓</span> Calculation completed
+  </div>
+
+  <div id="results" class="results">
+    <div class="results-cols">
+      <div class="card">
+        <h3>Calculation details</h3>
+        <div class="metric-row">
+          <div><div class="metric-label">Input power</div><div class="metric-hint">KVA × Power factor</div></div>
+          <span class="metric-value" id="m-inputPower">—</span>
+        </div>
+        <div class="metric-row">
+          <div><div class="metric-label">Total DC power</div><div class="metric-hint">Input power ÷ Inv. efficiency</div></div>
+          <span class="metric-value" id="m-dcPower">—</span>
+        </div>
+        <div class="metric-row">
+          <div><div class="metric-label">Required DC BUS current</div><div class="metric-hint">Total DC power ÷ DC BUS voltage</div></div>
+          <span class="metric-value" id="m-dcCurrent">—</span>
+        </div>
+        <div class="metric-row">
+          <div><div class="metric-label">Recommended UPS size</div><div class="metric-hint">Your entered capacity</div></div>
+          <span class="metric-value" id="m-recSize">—</span>
+        </div>
+      </div>
+
+      <div class="card rec-card">
+        <div class="rec-top">
+          <div class="thumb"><svg viewBox="0 0 24 24" fill="none"><path d="M7 11v9M2 12v6a2 2 0 0 0 2 2h11.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 17 8H13l.6-4.2A1.6 1.6 0 0 0 12 2L7 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Recommended for your requirement</h3>
+        </div>
+        <div class="rec-size" id="rec-headline">— kVA Online UPS</div>
+        <p class="rec-blurb">Based on your entered UPS parameters, this capacity is suitable for your requirement.</p>
+        <ul class="rec-list">
+          <li><span class="tick">✓</span> Meets the calculated load requirement</li>
+          <li><span class="tick">✓</span> Accounts for inverter efficiency</li>
+          <li><span class="tick">✓</span> Accounts for power factor</li>
+          <li><span class="tick">✓</span> Includes the required safety/headroom margin</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn-banner">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2 20h20L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
+      Ensure the input values are within the recommended range for optimal performance and safety.
+    </div>
+
+    <div class="card backup">
+      <div class="backup-top">
+        <h3 style="margin:0;">Battery backup requirements</h3>
+        <div class="oload-chip">O/P LOAD CURRENT: <span id="m-opload">—</span></div>
+      </div>
+      <table class="backup-table">
+        <thead>
+          <tr><th>Backup Time</th><th class="mono">Amps</th><th class="mono">Battery Required</th><th>Count</th></tr>
+        </thead>
+        <tbody id="backupBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-ghost" id="btnReset" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 1 1-3-6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M21 4v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Reset
+    </button>
+    <button class="btn btn-primary" id="btnEdit" type="button" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      Edit values
+    </button>
+    <button class="btn btn-whatsapp" id="btnWhatsapp" type="button" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.6.1-.2.3-.7.9-.9 1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.4.1-.2 0-.3 0-.5 0-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 3 4.7 4.1.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.6.2-1.2.2-1.3-.1-.2-.3-.3-.6-.4Z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.6 1.5 5.2L2 22l4.9-1.3c1.5.8 3.2 1.3 5.1 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2Zm0 18.3c-1.7 0-3.4-.5-4.8-1.4l-.3-.2-3.2.8.9-3.1-.2-.3C3.5 14.7 3 13.4 3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9Z"/></svg>
+      Send to client on WhatsApp
+    </button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var DEFAULTS = { kva: 200, dcbus: 409, eff: 0.9, pf: 0.8 };
+
+  var TIMES = [
+    { label: '15 Minutes', factor: 5/9   },
+    { label: '30 Minutes', factor: 25/27 },
+    { label: '1 HR',       factor: 100/63 },
+    { label: '1HR 30 MIN', factor: 50/21 },
+    { label: '2 HRS',      factor: 100/37 },
+    { label: '3 HRS',      factor: 15/4  },
+    { label: '4 HRS',      factor: 5     }
+  ];
+
+  var inKva  = document.getElementById('in-kva');
+  var inDc   = document.getElementById('in-dcbus');
+  var inEff  = document.getElementById('in-eff');
+  var inPf   = document.getElementById('in-pf');
+
+  var fieldKva = document.getElementById('field-kva');
+  var fieldDc  = document.getElementById('field-dcbus');
+  var fieldEff = document.getElementById('field-eff');
+  var fieldPf  = document.getElementById('field-pf');
+
+  var resultsEl = document.getElementById('results');
+  var statusBanner = document.getElementById('statusBanner');
+  var backupBody = document.getElementById('backupBody');
+  var btnEdit = document.getElementById('btnEdit');
+  var btnWhatsapp = document.getElementById('btnWhatsapp');
+
+  var WHATSAPP_NUMBER = '919821012189'; // +91 assumed for the 10-digit number provided
+  var latest = null; // holds the most recent valid calculation, used by the WhatsApp button
+
+  function setDefaults(){
+    inKva.value = DEFAULTS.kva;
+    inDc.value  = DEFAULTS.dcbus;
+    inEff.value = DEFAULTS.eff;
+    inPf.value  = DEFAULTS.pf;
+  }
+
+  function validate(el, field){
+    var raw = el.value.trim();
+    var v = parseFloat(raw);
+    var valid = raw !== '' && !isNaN(v) && v > 0;
+    field.classList.toggle('has-error', raw !== '' && !valid);
+    return valid ? v : null;
+  }
+
+  function fmt(n, decimals){
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+
+  function recalc(){
+    var kva = validate(inKva, fieldKva);
+    var dc  = validate(inDc, fieldDc);
+    var eff = validate(inEff, fieldEff);
+    var pf  = validate(inPf, fieldPf);
+
+    var allValid = kva !== null && dc !== null && eff !== null && pf !== null;
+
+    if (!allValid){
+      resultsEl.classList.remove('visible');
+      statusBanner.style.display = 'none';
+      btnEdit.style.display = 'none';
+      btnWhatsapp.style.display = 'none';
+      latest = null;
+      return;
+    }
+
+    statusBanner.style.display = 'flex';
+    resultsEl.classList.add('visible');
+    btnEdit.style.display = 'inline-flex';
+    btnWhatsapp.style.display = 'inline-flex';
+
+    // ---- EXISTING CALCULATION LOGIC (unchanged) ----
+    var va  = kva * 1000;                                   // VA
+    var idc = (va * pf) / (dc * eff);                        // DC discharge I per HOUR
+    var batteries = dc / 12;                                  // Battery count (unrounded, matches source sheet)
+    var opLoad = (kva / 230) * 1000 * pf;                     // O/P LOAD CURRENT
+
+    // ---- Derived display values (relabeled from the above, no new formulas) ----
+    var inputPowerKw = (va * pf) / 1000;   // = kVA * PF
+    var totalDcPowerW = idc * dc;          // idc * DC BUS  (== inputPowerKw*1000 / eff)
+
+    document.getElementById('m-inputPower').textContent = fmt(inputPowerKw, 2) + ' kW';
+    document.getElementById('m-dcPower').textContent = fmt(totalDcPowerW, 2) + ' W';
+    document.getElementById('m-dcCurrent').textContent = fmt(idc, 2) + ' A';
+    document.getElementById('m-recSize').textContent = fmt(kva, 2) + ' kVA';
+    document.getElementById('m-opload').textContent = fmt(opLoad, 2) + ' AMPS';
+    document.getElementById('rec-headline').textContent = fmt(kva, 2) + ' kVA Online UPS';
+
+    function fmtBatteries(n){
+      var rounded3 = Math.round(n * 1000) / 1000;
+      return (rounded3 % 1 === 0) ? String(rounded3) : rounded3.toFixed(3);
+    }
+    var batteriesLabel = fmtBatteries(batteries);
+
+    backupBody.innerHTML = '';
+    var backupRows = [];
+    TIMES.forEach(function(t){
+      var amps = idc * t.factor;
+      var ah = Math.round(amps * 1.10);
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + t.label + '</td>' +
+        '<td class="mono">' + fmt(amps, 2) + '</td>' +
+        '<td class="mono ah-value">' + ah + ' AH</td>' +
+        '<td>' + batteriesLabel + ' BATTERIES</td>';
+      backupBody.appendChild(tr);
+      backupRows.push(t.label + ' — ' + ah + ' AH');
+    });
+
+    latest = {
+      kva: kva, dc: dc, eff: eff, pf: pf,
+      inputPowerKw: inputPowerKw, totalDcPowerW: totalDcPowerW,
+      idc: idc, opLoad: opLoad, batteriesLabel: batteriesLabel,
+      backupRows: backupRows
+    };
+  }
+
+  [inKva, inDc, inEff, inPf].forEach(function(el){
+    el.addEventListener('input', recalc);
+  });
+
+  document.getElementById('btnReset').addEventListener('click', function(){
+    inKva.value = '';
+    inDc.value = '';
+    inEff.value = '';
+    inPf.value = '';
+    recalc();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  btnEdit.addEventListener('click', function(){
+    inKva.focus();
+    inKva.select();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  btnWhatsapp.addEventListener('click', function(){
+    if (!latest) return;
+    var lines = [
+      '*UPS 1 — Online UPS Backup Calculation*',
+      '',
+      '*Input Parameters*',
+      'KVA: ' + latest.kva,
+      'DC BUS: ' + latest.dc + ' V',
+      'Inv. Efficiency: ' + latest.eff,
+      'Power Factor: ' + latest.pf,
+      '',
+      '*Calculation Results*',
+      'Input Power: ' + fmt(latest.inputPowerKw, 2) + ' kW',
+      'Total DC Power: ' + fmt(latest.totalDcPowerW, 2) + ' W',
+      'Required DC BUS Current: ' + fmt(latest.idc, 2) + ' A',
+      'Recommended UPS Size: ' + fmt(latest.kva, 2) + ' kVA',
+      'O/P Load Current: ' + fmt(latest.opLoad, 2) + ' AMPS',
+      'Batteries Required: ' + latest.batteriesLabel,
+      '',
+      '*Battery Backup Requirements (AH)*',
+    ].concat(latest.backupRows).concat([
+      '',
+      '_Sent from the UPS 1 sizing calculator_'
+    ]);
+
+    var message = lines.join('\n');
+    var url = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message);
+    window.open(url, '_blank');
+  });
+
+  // Initial screen: empty fields showing placeholder examples; results stay
+  // hidden until the user enters real values.
+  inKva.value = '';
+  inDc.value = '';
+  inEff.value = '';
+  inPf.value = '';
+  recalc();
+})();
+</script>
+
+</body>
+</html>
